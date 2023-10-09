@@ -141,6 +141,8 @@ update msg model =
             { model | volume = newVol }
 
 
+
+
 view : Model -> Html Msg
 view model =
     div [classList [("playing", model.isPlaying)] , onMouseLeave Stop] 

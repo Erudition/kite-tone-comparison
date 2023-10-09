@@ -2780,9 +2780,7 @@ function _VirtualDom_render(vNode, eventNode)
 
 	if (tag === 0)
 	{
-		var n = _VirtualDom_doc.createTextNode(vNode.a);
-		n.created_by_elm = true;
-		return n
+		return _VirtualDom_doc.createTextNode(vNode.a);
 	}
 
 	if (tag === 4)
@@ -2817,7 +2815,6 @@ function _VirtualDom_render(vNode, eventNode)
 	var domNode = vNode.f
 		? _VirtualDom_doc.createElementNS(vNode.f, vNode.c)
 		: _VirtualDom_doc.createElement(vNode.c);
-	domNode.created_by_elm = true;
 
 	if (_VirtualDom_divertHrefToApp && vNode.c == 'a')
 	{
@@ -3677,57 +3674,14 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 
 	var vKids = vNode.e;
 	var childNodes = domNode.childNodes;
-	for (var j = 0, k = 0; j < Math.max(vKids.length, childNodes.length); j++, k++)
+	for (var j = 0; j < vKids.length; j++)
 	{
 		low++;
 		var vKid = tag === 1 ? vKids[j] : vKids[j].b;
 		var nextLow = low + (vKid.b || 0);
-
-		// 1. if unknown nodes have been inserted
-		if(childNodes.length > vKids.length)
-		{
-			// skip them
-			while(!childNodes[k].created_by_elm)
-			{
-				//console.log("Elm Virtual Dom: skipping non-Elm element", childNodes[k])
-				k++
-			}
-		}
-		// 2. if existing node has been removed
-		if(childNodes.length < vKids.length)
-		{
-			if(childNodes[k])
-			{
-				// replace the node using the old vdom
-				console.log("Elm Virtual Dom:", vKids.length - childNodes.length, "less children than expected, overwriting", childNodes[k], "with", vKids[j].c, "containing", vKids[j].e  )
-				_VirtualDom_applyPatchRedraw(childNodes[k], vKids[j], eventNode)
-			}
-			else
-			{
-				console.log("Elm Virtual Dom:", vKids.length - childNodes.length, "less children than expected, inserting", vKids[j].c, "containing", vKids[j].e  )
-				domNode.appendChild(_VirtualDom_render(vKids[j], eventNode));
-			}
-		}
-		// 3. if existing node has been replaced with unknown node
-		if(childNodes.length === vKids.length)
-		{
-			if(!childNodes[k].created_by_elm)
-			{
-				// replace the node using the old vdom
-				console.log("Elm Virtual Dom: in", eventNode, "the child", childNodes[k], "was not created by elm, but an elm element was expected there. Overwriting with", vKids[j])
-				_VirtualDom_applyPatchRedraw(childNodes[k], vKids[j], eventNode)
-			}
-		}
-		// 4. this is needed for some edge cases
-		if(vKids[j].$ === 1 && childNodes[k] && (childNodes[k].tagName || "").toLowerCase() !== vKids[j].c)
-		{
-			console.log("Elm Virtual Dom: Tag name does not match for", childNodes[k], ", overwriting with", vKids[j])
-			_VirtualDom_applyPatchRedraw(childNodes[k], vKids[j], eventNode)
-		}
-
 		if (low <= index && index <= nextLow)
 		{
-			i = _VirtualDom_addDomNodesHelp(childNodes[k], vKid, patches, i, low, nextLow, eventNode);
+			i = _VirtualDom_addDomNodesHelp(childNodes[j], vKid, patches, i, low, nextLow, eventNode);
 			if (!(patch = patches[i]) || (index = patch.r) > high)
 			{
 				return i;
@@ -3800,26 +3754,6 @@ function _VirtualDom_applyPatch(domNode, patch)
 
 		case 6:
 			var data = patch.s;
-			
-			// patch for extension
-			if(domNode.childNodes.length !== data.i + data.v)
-			{
-				console.log("Elm Virtual Dom: using alternative logic for an extension")
-				var removed = 0;
-				var index = domNode.childNodes.length - 1;
-				while (removed < data.i)
-				{
-					var childNode = domNode.childNodes[index];
-					if(childNode.created_by_elm)
-					{
-						domNode.removeChild(childNode);
-						removed++;
-					}
-					index--;
-				}
-				return domNode;
-			}
-
 			for (var i = 0; i < data.i; i++)
 			{
 				domNode.removeChild(domNode.childNodes[data.v]);
@@ -3937,7 +3871,6 @@ function _VirtualDom_applyPatchReorderEndInsertsHelp(endInserts, patch)
 
 function _VirtualDom_virtualize(node)
 {
-	node.created_by_elm = true;
 	// TEXT NODES
 
 	if (node.nodeType === 3)
@@ -4096,15 +4029,8 @@ function _Browser_makeAnimator(model, draw)
 	{
 		state = state === 1
 			? 0
-			: ( _Browser_requestAnimationFrame(updateIfNeeded), flipDraw(model), 1 );
+			: ( _Browser_requestAnimationFrame(updateIfNeeded), draw(model), 1 );
 	}
-	
-	function flipDraw(modelIn)
-	{   window.flipping.read();
-	    draw(modelIn);
-	    window.afterDraw();
-	}
-
 
 	return function(nextModel, isSync)
 	{
@@ -5161,15 +5087,8 @@ var $elm$browser$Browser$Internal = function (a) {
 var $elm$browser$Browser$Dom$NotFound = function (a) {
 	return {$: 'NotFound', a: a};
 };
-var $elm$url$Url$Dat = {$: 'Dat'};
-var $elm$url$Url$File = {$: 'File'};
-var $elm$url$Url$File2 = {$: 'File2'};
-var $elm$url$Url$Ftp = {$: 'Ftp'};
 var $elm$url$Url$Http = {$: 'Http'};
 var $elm$url$Url$Https = {$: 'Https'};
-var $elm$url$Url$Hyper = {$: 'Hyper'};
-var $elm$url$Url$Ipfs = {$: 'Ipfs'};
-var $elm$url$Url$Ipns = {$: 'Ipns'};
 var $elm$url$Url$Url = F6(
 	function (protocol, host, port_, path, query, fragment) {
 		return {fragment: fragment, host: host, path: path, port_: port_, protocol: protocol, query: query};
@@ -5209,8 +5128,7 @@ var $elm$url$Url$chompBeforePath = F5(
 					var _v1 = $elm$core$String$toInt(
 						A2($elm$core$String$dropLeft, i + 1, str));
 					if (_v1.$ === 'Nothing') {
-						return $elm$core$Maybe$Just(
-							A6($elm$url$Url$Url, protocol, str, $elm$core$Maybe$Nothing, path, params, frag));
+						return $elm$core$Maybe$Nothing;
 					} else {
 						var port_ = _v1;
 						return $elm$core$Maybe$Just(
@@ -5224,29 +5142,7 @@ var $elm$url$Url$chompBeforePath = F5(
 								frag));
 					}
 				} else {
-					if (!_v0.b.b.b) {
-						var _v2 = _v0.b;
-						var i = _v2.a;
-						var _v3 = $elm$core$String$toInt(
-							A2($elm$core$String$dropLeft, i + 1, str));
-						if (_v3.$ === 'Nothing') {
-							return $elm$core$Maybe$Just(
-								A6($elm$url$Url$Url, protocol, str, $elm$core$Maybe$Nothing, path, params, frag));
-						} else {
-							var port_ = _v3;
-							return $elm$core$Maybe$Just(
-								A6(
-									$elm$url$Url$Url,
-									protocol,
-									A2($elm$core$String$left, i, str),
-									port_,
-									path,
-									params,
-									frag));
-						}
-					} else {
-						return $elm$core$Maybe$Nothing;
-					}
+					return $elm$core$Maybe$Nothing;
 				}
 			}
 		}
@@ -5318,28 +5214,7 @@ var $elm$url$Url$fromString = function (str) {
 		A2($elm$core$String$dropLeft, 7, str)) : (A2($elm$core$String$startsWith, 'https://', str) ? A2(
 		$elm$url$Url$chompAfterProtocol,
 		$elm$url$Url$Https,
-		A2($elm$core$String$dropLeft, 8, str)) : (A2($elm$core$String$startsWith, 'file:///', str) ? A2(
-		$elm$url$Url$chompAfterProtocol,
-		$elm$url$Url$File2,
-		A2($elm$core$String$dropLeft, 8, str)) : (A2($elm$core$String$startsWith, 'file://', str) ? A2(
-		$elm$url$Url$chompAfterProtocol,
-		$elm$url$Url$File,
-		A2($elm$core$String$dropLeft, 7, str)) : (A2($elm$core$String$startsWith, 'ipfs://', str) ? A2(
-		$elm$url$Url$chompAfterProtocol,
-		$elm$url$Url$Ipfs,
-		A2($elm$core$String$dropLeft, 7, str)) : (A2($elm$core$String$startsWith, 'ipns://', str) ? A2(
-		$elm$url$Url$chompAfterProtocol,
-		$elm$url$Url$Ipns,
-		A2($elm$core$String$dropLeft, 7, str)) : (A2($elm$core$String$startsWith, 'dat://', str) ? A2(
-		$elm$url$Url$chompAfterProtocol,
-		$elm$url$Url$Dat,
-		A2($elm$core$String$dropLeft, 6, str)) : (A2($elm$core$String$startsWith, 'ftp://', str) ? A2(
-		$elm$url$Url$chompAfterProtocol,
-		$elm$url$Url$Ftp,
-		A2($elm$core$String$dropLeft, 6, str)) : (A2($elm$core$String$startsWith, 'hyper://', str) ? A2(
-		$elm$url$Url$chompAfterProtocol,
-		$elm$url$Url$Hyper,
-		A2($elm$core$String$dropLeft, 8, str)) : $elm$core$Maybe$Nothing))))))));
+		A2($elm$core$String$dropLeft, 8, str)) : $elm$core$Maybe$Nothing);
 };
 var $elm$core$Basics$never = function (_v0) {
 	never:
