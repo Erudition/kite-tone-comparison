@@ -5501,12 +5501,12 @@ var $author$project$Main$initialModel = function (contextEncoded) {
 			return _Debug_todo(
 				'Main',
 				{
-					start: {line: 38, column: 21},
-					end: {line: 38, column: 31}
+					start: {line: 40, column: 21},
+					end: {line: 40, column: 31}
 				})('No Audio Context');
 		}
 	}();
-	return {context: contextOrCrash, contextEncoded: contextEncoded, isPlaying: false, playingNotes: _List_Nil, playingText: 'Click to play', previousIsPlaying: false, rootNote: $author$project$Main$a4, volume: 0.5};
+	return {context: contextOrCrash, contextEncoded: contextEncoded, isPlaying: false, playingNotes: _List_Nil, playingText: 'Click once to activate', previousIsPlaying: false, rootNote: $author$project$Main$a4, volume: 0.5};
 };
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
@@ -5856,6 +5856,15 @@ var $elm$html$Html$Events$onMouseLeave = function (msg) {
 var $author$project$Main$ChangeVol = function (a) {
 	return {$: 'ChangeVol', a: a};
 };
+var $elm$json$Json$Encode$bool = _Json_wrap;
+var $elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$bool(bool));
+	});
+var $elm$html$Html$Attributes$disabled = $elm$html$Html$Attributes$boolProperty('disabled');
 var $elm$html$Html$input = _VirtualDom_node('input');
 var $elm$html$Html$Attributes$max = $elm$html$Html$Attributes$stringProperty('max');
 var $elm$html$Html$Attributes$min = $elm$html$Html$Attributes$stringProperty('min');
@@ -5891,6 +5900,37 @@ var $elm$html$Html$Events$onInput = function (tagger) {
 			$elm$html$Html$Events$alwaysStop,
 			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
 };
+var $hayleigh_dot_dev$elm_web_audio$WebAudio$Context$Closed = {$: 'Closed'};
+var $hayleigh_dot_dev$elm_web_audio$WebAudio$Context$Running = {$: 'Running'};
+var $hayleigh_dot_dev$elm_web_audio$WebAudio$Context$Suspended = {$: 'Suspended'};
+var $elm$json$Json$Decode$andThen = _Json_andThen;
+var $elm$json$Json$Decode$fail = _Json_fail;
+var $hayleigh_dot_dev$elm_web_audio$WebAudio$Context$state = function (_v0) {
+	var context = _v0.a;
+	var stateDecoder = A2(
+		$elm$json$Json$Decode$andThen,
+		function (state_) {
+			switch (state_) {
+				case 'suspended':
+					return $elm$json$Json$Decode$succeed($hayleigh_dot_dev$elm_web_audio$WebAudio$Context$Suspended);
+				case 'running':
+					return $elm$json$Json$Decode$succeed($hayleigh_dot_dev$elm_web_audio$WebAudio$Context$Running);
+				case 'closed':
+					return $elm$json$Json$Decode$succeed($hayleigh_dot_dev$elm_web_audio$WebAudio$Context$Closed);
+				default:
+					return $elm$json$Json$Decode$fail('');
+			}
+		},
+		A2($elm$json$Json$Decode$field, 'state', $elm$json$Json$Decode$string));
+	var _v1 = A2($elm$json$Json$Decode$decodeValue, stateDecoder, context);
+	if (_v1.$ === 'Ok') {
+		var stat = _v1.a;
+		return stat;
+	} else {
+		return $hayleigh_dot_dev$elm_web_audio$WebAudio$Context$state(
+			$hayleigh_dot_dev$elm_web_audio$WebAudio$Context$AudioContext(context));
+	}
+};
 var $elm$html$Html$Attributes$step = function (n) {
 	return A2($elm$html$Html$Attributes$stringProperty, 'step', n);
 };
@@ -5907,7 +5947,18 @@ var $elm$core$Maybe$withDefault = F2(
 			return _default;
 		}
 	});
-var $author$project$Main$volumeSlider = function (currentVol) {
+var $author$project$Main$volumeSlider = function (model) {
+	var pausedAttr = function () {
+		var _v0 = $hayleigh_dot_dev$elm_web_audio$WebAudio$Context$state(model.context);
+		switch (_v0.$) {
+			case 'Suspended':
+				return A2($elm$html$Html$Attributes$style, 'opacity', '0.5');
+			case 'Closed':
+				return $elm$html$Html$Attributes$disabled(true);
+			default:
+				return $elm$html$Html$Attributes$disabled(false);
+		}
+	}();
 	return _List_fromArray(
 		[
 			$elm$html$Html$text('🔊'),
@@ -5916,18 +5967,19 @@ var $author$project$Main$volumeSlider = function (currentVol) {
 			_List_fromArray(
 				[
 					$elm$html$Html$Attributes$type_('range'),
+					pausedAttr,
 					$elm$html$Html$Attributes$value(
-					$elm$core$String$fromFloat(currentVol)),
+					$elm$core$String$fromFloat(model.volume)),
 					$elm$html$Html$Events$onInput(
 					function (s) {
 						return $author$project$Main$ChangeVol(
 							A2(
 								$elm$core$Maybe$withDefault,
-								currentVol,
+								model.volume,
 								$elm$core$String$toFloat(s)));
 					}),
 					$elm$html$Html$Attributes$title('Distortion (0ver 50%) makes the interference more obvious'),
-					$elm$html$Html$Attributes$min('0.0000001'),
+					$elm$html$Html$Attributes$min('0.001'),
 					$elm$html$Html$Attributes$max('1'),
 					$elm$html$Html$Attributes$step('0.001')
 				]),
@@ -5968,34 +6020,31 @@ var $author$project$Main$view = function (model) {
 							$author$project$Main$fourths(model.rootNote),
 							$author$project$Main$fifths(model.rootNote)
 						])),
-				$author$project$Main$volumeSlider(model.volume))));
+				$author$project$Main$volumeSlider(model))));
 };
 var $author$project$Main$main = function () {
 	var overrideUpdate = F2(
 		function (msg, model) {
+			var newContext = A2(
+				$elm$core$Maybe$withDefault,
+				model.context,
+				$hayleigh_dot_dev$elm_web_audio$WebAudio$Context$from(model.contextEncoded));
 			var afterUpdate = A2(
 				$author$project$Main$update,
 				msg,
 				_Utils_update(
 					model,
-					{
-						context: A2(
-							$elm$core$Maybe$withDefault,
-							model.context,
-							$hayleigh_dot_dev$elm_web_audio$WebAudio$Context$from(model.contextEncoded))
-					}));
+					{context: newContext}));
+			var newModel = _Utils_update(
+				afterUpdate,
+				{previousIsPlaying: model.isPlaying});
 			return _Utils_Tuple2(
-				_Utils_update(
-					afterUpdate,
-					{previousIsPlaying: model.isPlaying}),
+				newModel,
 				$author$project$Main$toWebAudio(
 					A2(
 						$elm$json$Json$Encode$list,
 						$hayleigh_dot_dev$elm_web_audio$WebAudio$encode,
-						$author$project$Main$audio(
-							_Utils_update(
-								afterUpdate,
-								{previousIsPlaying: model.isPlaying})))));
+						$author$project$Main$audio(newModel))));
 		});
 	return $elm$browser$Browser$element(
 		{

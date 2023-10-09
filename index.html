@@ -523,7 +523,9 @@ function diffNode(prev, curr) {
         const virtualCtx = new VirtualAudioContext(ctx)
     var app = Elm.Main.init({ node: document.querySelector('main'), flags: ctx });
 
-
+        // app.ports.wakeWebAudio.subscribe(() => {
+        //     ctx.resume();
+        // })
     
         app.ports.toWebAudio.subscribe((nodes) => {
           virtualCtx.update(nodes)

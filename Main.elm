@@ -11,6 +11,8 @@ import WebAudio.Context exposing (AudioContext)
 
 port toWebAudio : Json.Encode.Value -> Cmd msg
 
+port wakeWebAudio : () -> Cmd msg
+
 type alias Model =
     { contextEncoded : Json.Encode.Value
     , context : AudioContext
@@ -39,7 +41,7 @@ initialModel contextEncoded =
     in
     { contextEncoded = contextEncoded
     , context = contextOrCrash
-    , playingText = "Click to play" 
+    , playingText = "Click once to activate" 
     , playingNotes = []
     , previousIsPlaying = False
     , isPlaying = False
@@ -152,17 +154,31 @@ view model =
             , fourths model.rootNote
             , fifths model.rootNote
             ])
-            ++ (volumeSlider model.volume)
+            ++ (volumeSlider model)
         )
 
-volumeSlider currentVol =
+volumeSlider model =
+    let
+        pausedAttr =
+            case WebAudio.Context.state model.context of
+                WebAudio.Context.Suspended ->
+                    style "opacity" "0.5"
+
+                WebAudio.Context.Closed ->
+                    Html.Attributes.disabled True
+
+                WebAudio.Context.Running ->
+                    Html.Attributes.disabled False
+
+    in
     [ text "🔊"
     , input 
         [Html.Attributes.type_ "range"
-        , value (String.fromFloat currentVol)
-        , onInput (\s -> ChangeVol (Maybe.withDefault currentVol (String.toFloat s)))
+        , pausedAttr
+        , value (String.fromFloat model.volume)
+        , onInput (\s -> ChangeVol (Maybe.withDefault model.volume (String.toFloat s)))
         , title "Distortion (0ver 50%) makes the interference more obvious"
-        , Html.Attributes.min "0.0000001"
+        , Html.Attributes.min "0.001"
         , Html.Attributes.max "1"
         , Html.Attributes.step "0.001"
         ] []
@@ -236,14 +252,21 @@ main =
     let
         overrideUpdate msg model =
             let 
+                newContext =
+                    Maybe.withDefault model.context (WebAudio.Context.from model.contextEncoded)
+
                 afterUpdate =
                     update msg 
-                        {model | context = Maybe.withDefault model.context (WebAudio.Context.from model.contextEncoded)}
+                        {model | context = newContext}
+
+                newModel =
+                    {afterUpdate | previousIsPlaying = model.isPlaying}
             in
-            ( {afterUpdate | previousIsPlaying = model.isPlaying}
-                ,  audio {afterUpdate | previousIsPlaying = model.isPlaying}
-                    |> Json.Encode.list WebAudio.encode
-                    |> toWebAudio
+            ( newModel
+                ,  
+                audio newModel
+                            |> Json.Encode.list WebAudio.encode
+                            |> toWebAudio
                 )
     in
     Browser.element
