@@ -5952,7 +5952,7 @@ var $author$project$Main$volumeSlider = function (model) {
 		var _v0 = $hayleigh_dot_dev$elm_web_audio$WebAudio$Context$state(model.context);
 		switch (_v0.$) {
 			case 'Suspended':
-				return A2($elm$html$Html$Attributes$style, 'opacity', '0.5');
+				return A2($elm$html$Html$Attributes$attribute, 'suspended', 'true');
 			case 'Closed':
 				return $elm$html$Html$Attributes$disabled(true);
 			default:

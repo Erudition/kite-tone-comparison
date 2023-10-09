@@ -162,7 +162,7 @@ volumeSlider model =
         pausedAttr =
             case WebAudio.Context.state model.context of
                 WebAudio.Context.Suspended ->
-                    style "opacity" "0.5"
+                    Html.Attributes.attribute "suspended" "true"
 
                 WebAudio.Context.Closed ->
                     Html.Attributes.disabled True
